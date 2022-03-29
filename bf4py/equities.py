@@ -119,7 +119,7 @@ def price_history(isin:str, start: datetime, end: datetime):
     i = 0
     CHUNK_SIZE = 1000
     maxCount = CHUNK_SIZE + 1
-    print(start.astimezone(timezone.utc).isoformat().split("T")[0])
+
     params = {'limit': CHUNK_SIZE,
               'offset': 0,
               'isin': isin,
@@ -131,7 +131,7 @@ def price_history(isin:str, start: datetime, end: datetime):
         params['offset'] = i * CHUNK_SIZE
         
         data = _data_request('price_history', params)
-        print(data)
+
         maxCount = data['totalCount']
         price_history += data['data']
         
