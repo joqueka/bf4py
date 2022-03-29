@@ -94,6 +94,51 @@ def bid_ask_history(isin:str, start: datetime, end: datetime):
         
     return ba_history
 
+
+def price_history(isin:str, start: datetime, end: datetime):
+    """
+    Get best price history of specific equity (by ISIN). This usually works for about the last two weeks.
+
+    Parameters
+    ----------
+    isin : str
+        Desired ISIN.
+    start : datetime
+        Startng date. Should not be more than two weeks ago
+    end : datetime
+        End date.
+
+    Returns
+    -------
+    price_history : TYPE
+        List of dicts with price history data.
+
+    """
+    #Initializing
+    price_history = []
+    i = 0
+    CHUNK_SIZE = 1000
+    maxCount = CHUNK_SIZE + 1
+    print(start.astimezone(timezone.utc).isoformat().split("T")[0])
+    params = {'limit': CHUNK_SIZE,
+              'offset': 0,
+              'isin': isin,
+              'mic': 'XETR',
+              'minDate': start.astimezone(timezone.utc).isoformat().split("T")[0],
+              'maxDate': end.astimezone(timezone.utc).isoformat().split("T")[0]}
+    
+    while i * CHUNK_SIZE < maxCount:
+        params['offset'] = i * CHUNK_SIZE
+        
+        data = _data_request('price_history', params)
+        print(data)
+        maxCount = data['totalCount']
+        price_history += data['data']
+        
+        i += 1
+        
+    return price_history
+
 def times_sales(isin: str, start: datetime, end: datetime):
     """
     Get time/sales history of specific equity (by ISIN). This usually works for about the last two weeks.
