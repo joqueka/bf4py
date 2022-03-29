@@ -96,7 +96,7 @@ def bid_ask_history(isin:str, start: datetime, end: datetime):
 
 def times_sales(isin: str, start: datetime, end: datetime):
     """
-    Get time/sales history of specific equity (by ISIN). This usually works for about the last two weeks.
+    Get time/sales history of specific equity (by ISIN) from XETRA. This usually works for about the last two weeks.
 
     Parameters
     ----------

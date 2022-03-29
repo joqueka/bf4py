@@ -10,7 +10,7 @@ So far functions for retrieving basic data are available, especially for **equit
 ### Important notice
 Data is usually delayed by 15Min by the provider and some data like bid/ask history are available only for short periods of history.
 
-## Documentation
+## API Reference
 
 Functions are encapsuled in submodules. See docstrings for details about parameters. Return values are always dicts with self-describing keys, so just try out.
 
@@ -43,7 +43,7 @@ Functions are encapsuled in submodules. See docstrings for details about paramet
 	.news_by_isin(...)
 	.news_by_id(...)
 
-## Example
+## Examples
 
 	import bf4py
 	from datetime import datetime, timedelta
@@ -66,6 +66,24 @@ Yields in:
 	 'issuer': None,
 	 'companyIcon': 'https://erscontent.deutsche-boerse.com/erscontentXML/logo/995.jpg',
 	 'isParticipationCertificate': False}
+
+Get the *daily OHLC data* of that stock on XETRA for one year:
+	
+	end_date = date.today()
+	start_date = end_date - timedelta(days=365)
+	
+	history = bf4py.general.eod_data(isin, start_date, end_date)
+	
+Returns:
+	
+	[{'date': '2022-03-29',
+	  'open': 217.3,
+	  'close': 218.55,
+	  'high': 220.45,
+	  'low': 216.4,
+	  'turnoverPieces': 1242298,
+	  'turnoverEuro': 271453308.35
+	 }, ...]
 
 Get the *times and sales* list of that stock on XETRA:
 	

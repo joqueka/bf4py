@@ -27,8 +27,8 @@ def eod_data(isin: str, min_date: date, max_date: date=date.today(), mic:str='XE
     """
     params = {'isin' : isin,
               'mic': mic,
-              'minDate': min_date,
-              'maxDate': max_date,
+              'minDate': min_date.strftime("%Y-%m-%d"),
+              'maxDate': max_date.strftime("%Y-%m-%d"),
               'cleanSplit': False,
               'cleanPayout': False,
               'cleanSubscription': False}
