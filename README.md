@@ -28,6 +28,7 @@ Functions are encapsuled in submodules. See docstrings for details about paramet
 	.bid_ask_history(...)
 	.times_sales(...)
 	.related_indices(...)
+	.price_history(...)
 	
 ### bf4py.company
 
