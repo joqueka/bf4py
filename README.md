@@ -43,6 +43,12 @@ Functions are encapsuled in submodules. See docstrings for details about paramet
 	.news_by_isin(...)
 	.news_by_id(...)
 
+### bf4py.derivatives - *NEW*
+
+	.trade_history(...)
+	.instrument_data(...)
+	
+
 ## Examples
 
 	import bf4py
