@@ -1,6 +1,8 @@
 # bf4py
 *A Python Package for retrieving data from boerse-frankfurt.de*
 
+:rotating_light: **NEW:** Stream real-time data! For details see Reference below... :rotating_light:
+
 ## Description
 
 This package uses an undocumented API to retrieve data that is available on [www.boerse-frankfurt.de](https://www.boerse-frankfurt.de) (no web-scraping!). It can be used by everyone who is interested in the german stock market as an alternative to available packages like [yfinance](https://github.com/ranaroussi/yfinance) which provides data for the US stock market.
@@ -43,11 +45,15 @@ Functions are encapsuled in submodules. See docstrings for details about paramet
 	.news_by_isin(...)
 	.news_by_id(...)
 
-### bf4py.derivatives - *NEW*
+### bf4py.derivatives
 
 	.trade_history(...)
 	.instrument_data(...)
 	
+### bf4py.live_data  - *NEW*
+	.price_infromation(...)
+	.live_quotes(...)
+	.bid_ask_overview(...)
 
 ## Examples
 
@@ -105,6 +111,28 @@ Result is a list of dicts where each dict is an executed trade:
 	 'turnover': 567076.0,
 	 'turnoverInEuro': 121410971.6}, ...]
 
+**Get live-data**
+
+For getting live data just create an receiver-client and start streaming:
+	
+	client = bf4py.live_data.quote_box(isin)
+	client.open_stream()
+
+Print output will be like:
+
+	{'isin': 'DE0008404005', 'bidLimit': 191.76, 'askLimit': 191.8, 'bidSize': 1135.0, 'askSize': 109.0, 'lastPrice': 191.78, 'timestampLastPrice': '2022-06-08T15:06:07+02:00', 'changeToPrevDayAbsolute': -4.38, 'changeToPrevDayInPercent': -2.2328711257, 'spreadAbsolute': 0.04, 'spreadRelative': 0.0208594076, 'timestamp': '2022-06-08T15:06:12+02:00', 'nominal': False, 'tradingStatus': 'CONTINUOUS'}
+
+Finally stop transmission
+
+	client.close()
+
+Notes:
+
+ - By default output is sent to `print()` function but you can provide your own callback function for data evaluation
+ - Received data is stored in `client.data`
+ - Sometimes it will need some seconds to start receiving data continuously
+ - You **can not reuse** a client but must create a new one as soon as a connection is closed by intend or error
+ - You can check client's status by `client.active`
 
 
 ## Requirements
@@ -113,6 +141,7 @@ Result is a list of dicts where each dict is an executed trade:
  	hashlib
   	requests
   	json
+  	sseclient
 
 
 ## Misc

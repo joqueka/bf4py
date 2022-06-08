@@ -6,9 +6,9 @@ def _create_header(url):
     headers = {'authority': 'api.boerse-frankfurt.de', 
                'origin': 'https://www.boerse-frankfurt.de',
                'referer': 'https://www.boerse-frankfurt.de/',
-              'client-date': '' + ids['timestr'],
-              'x-client-traceid': '' + ids['traceid'],
-              'x-security': '' + ids['xsecurity']}
+               'client-date': '' + ids['timestr'],
+               'x-client-traceid': '' + ids['traceid'],
+               'x-security': '' + ids['xsecurity']}
             
     return headers
 
@@ -71,6 +71,26 @@ def _search_request(function: str, params: dict):
     
     return data
 
+# Functions for STREAM requests
+
+def _stream_request(function: str, params: dict):
+    import sseclient, requests
+    
+    url = _get_data_url(function, params)
+    header = _create_header(url)
+    header['accept'] = 'text/event-stream'
+    header['cache-control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+    # accept-encoding: gzip, deflate, br
+    # accept-language: de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7
+    # 
+    # client-date: 2022-06-08T12:25:46.958Z
+    # dnt: 1
+    # expires: 0
+    
+    socket = requests.get(url, stream=True, headers=header, timeout=(3.5, 5))
+    client = sseclient.SSEClient(socket)
+    
+    return client
 
 def _read_chunked(request:callable, function:str, args:dict, CHUNK_SIZE:int=1000, 
                   identifiers:dict={'data':'data', 'numberElements':'totalCount'}):
