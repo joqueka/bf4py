@@ -16,7 +16,7 @@ def _create_ids(url):
     from datetime import datetime
     import hashlib
     
-    salt="w4icATTGtnjAZMbkL3kJwxMfEAKDa3MN"
+    salt="w4ivc1ATTGta6njAZzMbkL3kJwxMfEAKDa3MNr"
     
     timeutc=datetime.utcnow()
     timelocal=datetime.now()
@@ -80,12 +80,6 @@ def _stream_request(function: str, params: dict):
     header = _create_header(url)
     header['accept'] = 'text/event-stream'
     header['cache-control'] = 'no-cache, no-store, must-revalidate, max-age=0'
-    # accept-encoding: gzip, deflate, br
-    # accept-language: de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7
-    # 
-    # client-date: 2022-06-08T12:25:46.958Z
-    # dnt: 1
-    # expires: 0
     
     socket = requests.get(url, stream=True, headers=header, timeout=(3.5, 5))
     client = sseclient.SSEClient(socket)
