@@ -25,10 +25,12 @@ def eod_data(isin: str, min_date: date, max_date: date=date.today(), mic:str='XE
         Returns list of dicts with trading data. Elements are OHLC, date and turnover in Euro and Pieces.
 
     """
+    date_delta = max_date - min_date
     params = {'isin' : isin,
               'mic': mic,
               'minDate': min_date.strftime("%Y-%m-%d"),
               'maxDate': max_date.strftime("%Y-%m-%d"),
+              'limit': date_delta.days,
               'cleanSplit': False,
               'cleanPayout': False,
               'cleanSubscription': False}
