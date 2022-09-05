@@ -115,7 +115,7 @@ Result is a list of dicts where each dict is an executed trade:
 
 For getting live data just create an receiver-client and start streaming:
 	
-	client = bf4py.live_data.quote_box(isin)
+	client = bf4py.live_data.live_quotes(isin)
 	client.open_stream()
 
 Print output will be like:
