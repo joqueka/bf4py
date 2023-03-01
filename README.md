@@ -1,7 +1,7 @@
 # bf4py
 *A Python Package for retrieving data from boerse-frankfurt.de*
 
-:rotating_light: **NEW:** Stream real-time data! For details see Reference below... :rotating_light:
+**Latest update:** A lot of improvements were made under the hood. It's now object oriented resulting in better perfomance since http-sessions are reused for consecutive calls. Functions are now capsuled in classes but calls stay the same. However you must adapt function parameters since `isin` is not a positional argument anymore but an optional keyword-argument.
 
 ## Description
 
@@ -15,6 +15,12 @@ Data is usually delayed by 15Min by the provider and some data like bid/ask hist
 ## API Reference
 
 Functions are encapsuled in submodules. See docstrings for details about parameters. Return values are always dicts with self-describing keys, so just try out.
+
+### bf4py.BF4Py() - *NEW* :rotating_light:
+This new class holds the https connection and provides functions via submodules like the previous version. Furthermore a default isin can be set, if not you have to provide it with every function call as before.
+
+	bf4py = BF4Py(default_isin='...', default_mic='...')
+
 
 ### bf4py.general
 
@@ -44,47 +50,54 @@ Functions are encapsuled in submodules. See docstrings for details about paramet
 	.news_by_category(...)
 	.news_by_isin(...)
 	.news_by_id(...)
+	.get_categories()
 
 ### bf4py.derivatives
 
 	.trade_history(...)
 	.instrument_data(...)
 	
-### bf4py.live_data  - *NEW*
-	.price_infromation(...)
+### bf4py.live_data 
+	.price_information(...)
 	.live_quotes(...)
 	.bid_ask_overview(...)
 
 ## Examples
 
-	import bf4py
+	from bf4py import BF4Py
 	from datetime import datetime, timedelta
+	
+	bf4py = BF4Py(default_isin='DE0005190003') # Default BMW
 
-Get some basic data about a stock:
+Get some basic data about *BMW* stock:
 
-	isin = 'DE0008404005' # Allianz SE
-	bf4py.general.data_sheet_header(isin)
+	bf4py.general.data_sheet_header() # Get info for BMW
 
 Yields in:
 
 	{'participationCertificate': False,
-	 'isin': 'DE0008404005',
-	 'wkn': '840400',
-	 'instrumentName': {'originalValue': 'ALLIANZ SE NA O.N.',
-	  'translations': {'others': 'Allianz SE'}},
-	 'exchangeSymbol': 'ALV',
+	 'isin': 'DE0005190003',
+	 'wkn': '519000',
+	 'instrumentName': {'originalValue': 'BAY.MOTOREN WERKE AG ST',
+	  'translations': {'others': 'BMW AG St'}},
+	 'exchangeSymbol': 'BMW',
 	 'instrumentTypeKey': 'equity',
 	 'underlyingValueList': None,
 	 'issuer': None,
-	 'companyIcon': 'https://erscontent.deutsche-boerse.com/erscontentXML/logo/995.jpg',
+	 'companyIcon': 'https://erscontent.deutsche-boerse.com/erscontentXML/logo/204.jpg',
 	 'isParticipationCertificate': False}
 
-Get the *daily OHLC data* of that stock on XETRA for one year:
+If you want to get data about another instrument just provide the ISIN:
+
+
+	bf4py.general.data_sheet_header(isin='DE0005190003') # Get info for Mercedes Benz
+
+Get the *daily OHLC data* of default stock on XETRA for one year:
 	
 	end_date = date.today()
 	start_date = end_date - timedelta(days=365)
 	
-	history = bf4py.general.eod_data(isin, start_date, end_date)
+	history = bf4py.general.eod_data(start_date, end_date)
 	
 Returns:
 	
@@ -102,7 +115,7 @@ Get the *times and sales* list of that stock on XETRA:
 	start_date = datetime.now() - timedelta(days=1)
 	end_date = datetime.now()
 	
-	ts = bf4py.equities.times_sales(isin, start_date, end_date)
+	ts = bf4py.equities.times_sales(start_date, end_date)
 
 Result is a list of dicts where each dict is an executed trade:
 
@@ -115,8 +128,7 @@ Result is a list of dicts where each dict is an executed trade:
 
 For getting live data just create an receiver-client and start streaming:
 	
-	client = bf4py.live_data.live_quotes(isin)
-	client.open_stream()
+	client = bf4py.live_data.live_quotes(isin) 	client.open_stream()
 
 Print output will be like:
 
@@ -128,10 +140,11 @@ Finally stop transmission
 
 Notes:
 
- - By default output is sent to `print()` function but you can provide your own callback function for data evaluation
- - Received data is stored in `client.data`
+ - By default received data is sent to `print()` function but you can provide your own callback function for data evaluation
+ - Received data can be stored in `client.data`, use flag `cache_data=True`
+ - Cached data is cleared with every call of `.open_stream()`
  - Sometimes it will need some seconds to start receiving data continuously
- - You **can not reuse** a client but must create a new one as soon as a connection is closed by intend or error
+ - Now **you can reuse** a client after a connection was closed by intend or error
  - You can check client's status by `client.active`
 
 
