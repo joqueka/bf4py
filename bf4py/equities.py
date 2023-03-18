@@ -116,7 +116,7 @@ class Equities():
             
         return ba_history
     
-    def times_sales(self, start: datetime, end: datetime=datetime.now(), isin: str = None):
+    def times_sales(self, start: datetime, end: datetime=None, isin: str = None):
         """
         Get time/sales history of specific equity (by ISIN) from XETRA. This usually works for about the last two weeks.
     
@@ -138,7 +138,10 @@ class Equities():
         if isin is None:
             isin = self.default_isin
         assert isin is not None, 'No ISIN given'
-            
+        
+        if end is None:
+            end = datetime.now()
+        
         ts_list = []
         i = 0
         CHUNK_SIZE = 10000
@@ -148,8 +151,8 @@ class Equities():
                   'limit': CHUNK_SIZE,
                   'offset': 0,
                   'mic': 'XETR',
-                  'minDateTime': start.astimezone().isoformat(),
-                  'maxDateTime': end.astimezone().isoformat()}
+                  'minDateTime': start.astimezone(timezone.utc).isoformat().replace('+00:00','Z'),
+                  'maxDateTime': end.astimezone(timezone.utc).isoformat().replace('+00:00','Z')}
         
         while i * CHUNK_SIZE < maxCount:
             params['offset'] = i * CHUNK_SIZE
