@@ -1,6 +1,8 @@
 # bf4py
 *A Python Package for retrieving data from boerse-frankfurt.de*
 
+**New methods:** Now you can search derivatives using specified parameters.
+
 **Latest update:** A lot of improvements were made under the hood. It's now object oriented resulting in better perfomance since http-sessions are reused for consecutive calls. Functions are now capsuled in classes but calls stay the same. However you must adapt function parameters since `isin` is not a positional argument anymore but an optional keyword-argument.
 
 ## Description
@@ -56,6 +58,8 @@ This new class holds the https connection and provides functions via submodules 
 
 	.trade_history(...)
 	.instrument_data(...)
+	.search_parameter_template()
+	.search_derivatives(...)
 	
 ### bf4py.live_data 
 	.price_information(...)
