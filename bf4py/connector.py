@@ -16,7 +16,7 @@ class BF4PyConnector():
             response = self.session.get('https://www.boerse-frankfurt.de/')
             if response.status_code != 200:
                 raise Exception('Could not connect to boerse-frankfurt.de')
-            file = re.findall('(?<=src=")main-es2015\.\w*\.js', response.text)
+            file = re.findall('(?<=src=")main\.\w*\.js', response.text)
             if len(file) != 1:
                 raise Exception('Could not find ECMA Script name')
             
