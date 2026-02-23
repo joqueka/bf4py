@@ -1,0 +1,19 @@
+[project]
+name = "bf4py"
+description = "Retrieve data from the Frankfurt stock exchange."
+authors = [{ name = "joqueka" }]
+version = "0.2.0"
+readme = "README.md"
+
+requires-python = ">=3.10"
+dependencies = ["requests", "sseclient"]
+
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
