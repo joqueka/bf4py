@@ -16,7 +16,7 @@ class BF4PyConnector():
             response = self.session.get('https://www.boerse-frankfurt.de/')
             if response.status_code != 200:
                 raise Exception('Could not connect to boerse-frankfurt.de')
-            file = re.findall('(?<=src=")main\.\w*\.js', response.text)
+            file = re.findall(r'(?<=src=")main\.\w*\.js', response.text)
             if len(file) != 1:
                 raise Exception('Could not find ECMA Script name')
             
@@ -24,7 +24,7 @@ class BF4PyConnector():
             response = self.session.get('https://www.boerse-frankfurt.de/'+file[0])
             if response.status_code != 200:
                 raise Exception('Could not connect to boerse-frankfurt.de')
-            salt_list = re.findall('(?<=salt:")\w*', response.text)
+            salt_list = re.findall(r'(?<=salt:")\w*', response.text)
             if len(salt_list) != 1:
                 raise Exception('Could not find tracing-salt')
             self.salt = salt_list[0]

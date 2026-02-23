@@ -4,7 +4,7 @@
 def _get_salt():
     import re, requests
     result = requests.get('https://www.boerse-frankfurt.de/main-es2015.ac96265ebda80215a714.js')
-    salt = re.findall('(?<=salt:")\w*', result.text)
+    salt = re.findall(r'(?<=salt:")\w*', result.text)
     return salt[0]
 
 def _create_header(url):
