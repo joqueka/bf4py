@@ -8,6 +8,7 @@ from .derivatives import Derivatives
 from .general import General
 from .company import Company
 from .live_data import LiveData
+from .bonds import Bonds
 
 from .connector import BF4PyConnector
 
@@ -25,4 +26,5 @@ class BF4Py():
         self.derivatives = Derivatives(self.connector, self.default_isin)
         self.general = General(self.connector, self.default_isin)
         self.live_data = LiveData(self.connector, self.default_isin)
+        self.bonds = Bonds(self.connector, self.default_isin, self.default_mic)
 

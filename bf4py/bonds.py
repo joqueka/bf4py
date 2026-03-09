@@ -5,8 +5,9 @@ from .connector import BF4PyConnector
 from datetime import date, datetime, timezone, time
 
 class Bonds():
-    def __init__(self, connector: BF4PyConnector = None, default_isin = None):
+    def __init__(self, connector: BF4PyConnector = None, default_isin = None, default_mic = None):
         self.default_isin = default_isin
+        self.default_mic = default_mic
         
         if connector is None:
             self.connector = BF4PyConnector()
