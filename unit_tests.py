@@ -220,33 +220,28 @@ class TestBF4PyConnector(unittest.TestCase):
 # 2. BF4Py – Main class
 # ===========================================================================
 
-class TestBF4Py(unittest.TestCase):
-    """Tests for the BF4Py orchestrator class."""
+def _make_bf4py(isin=None, mic=None):
+    """
+    Build a BF4Py instance with a mocked connector, exactly as the real
+    BF4Py.__init__ does it, so that tests reflect the actual public API.
+    """
+    from bf4py import BF4Py
+    with patch("bf4py.BF4Py.BF4PyConnector") as MockConn:
+        MockConn.return_value = MagicMock()
+        bf = BF4Py(default_isin=isin, default_mic=mic)
+    return bf
 
-    def _bf4py(self, isin=None, mic=None):
-        from bf4py import BF4Py
-        with patch("bf4py.connector.BF4PyConnector.__init__", return_value=None):
-            with patch("bf4py.connector.BF4PyConnector.__del__", return_value=None):
-                bf = BF4Py.__new__(BF4Py)
-                bf.default_isin = isin
-                bf.default_mic = mic
-                bf.connector = MagicMock()
-                from bf4py.equities import Equities
-                from bf4py.news import News
-                from bf4py.company import Company
-                from bf4py.derivatives import Derivatives
-                from bf4py.general import General
-                from bf4py.live_data import LiveData
-                bf.equities = Equities(connector=bf.connector, default_isin=isin)
-                bf.news = News(connector=bf.connector, default_isin=isin)
-                bf.company = Company(connector=bf.connector, default_isin=isin)
-                bf.derivatives = Derivatives(connector=bf.connector, default_isin=isin)
-                bf.general = General(connector=bf.connector, default_isin=isin)
-                bf.live_data = LiveData(connector=bf.connector, default_isin=isin)
-                return bf
+
+class TestBF4Py(unittest.TestCase):
+    """
+    Tests for the BF4Py orchestrator class.
+
+    All tests use the real BF4Py.__init__ with a mocked connector so that
+    the submodule wiring is tested exactly as users experience it.
+    """
 
     def test_submodules_are_initialized(self):
-        """BF4Py must expose all six sub-modules after construction."""
+        """BF4Py must expose equities, news, company, derivatives, general and live_data."""
         from bf4py.equities import Equities
         from bf4py.news import News
         from bf4py.company import Company
@@ -254,25 +249,51 @@ class TestBF4Py(unittest.TestCase):
         from bf4py.general import General
         from bf4py.live_data import LiveData
 
-        bf = self._bf4py(isin=BMW_ISIN)
-        self.assertIsInstance(bf.equities, Equities)
-        self.assertIsInstance(bf.news, News)
-        self.assertIsInstance(bf.company, Company)
+        bf = _make_bf4py(isin=BMW_ISIN)
+        self.assertIsInstance(bf.equities,    Equities)
+        self.assertIsInstance(bf.news,        News)
+        self.assertIsInstance(bf.company,     Company)
         self.assertIsInstance(bf.derivatives, Derivatives)
-        self.assertIsInstance(bf.general, General)
-        self.assertIsInstance(bf.live_data, LiveData)
+        self.assertIsInstance(bf.general,     General)
+        self.assertIsInstance(bf.live_data,   LiveData)
+
+    def test_bonds_submodule_missing(self):
+        """
+        KNOWN BUG: BF4Py.__init__ never creates self.bonds, so the primary
+        usage pattern  bf4py.bonds.bond_data(...)  raises AttributeError.
+        The README advertises default_isin / default_mic on BF4Py but Bonds
+        is not wired in.
+        """
+        bf = _make_bf4py(isin=BOND_ISIN, mic=XFRA_MIC)
+        with self.assertRaises(AttributeError):
+            _ = bf.bonds
 
     def test_default_isin_propagated(self):
-        """BF4Py must propagate the default_isin to every sub-module."""
-        bf = self._bf4py(isin=BMW_ISIN)
+        """BF4Py must propagate the default_isin to every wired sub-module."""
+        bf = _make_bf4py(isin=BMW_ISIN)
         for module in (bf.equities, bf.news, bf.company,
                        bf.derivatives, bf.general, bf.live_data):
-            self.assertEqual(module.default_isin, BMW_ISIN)
+            self.assertEqual(module.default_isin, BMW_ISIN,
+                             f"{type(module).__name__} did not receive default_isin")
+
+    def test_default_mic_stored(self):
+        """BF4Py must store default_mic on itself (even though submodules ignore it)."""
+        bf = _make_bf4py(mic=XFRA_MIC)
+        self.assertEqual(bf.default_mic, XFRA_MIC)
 
     def test_no_default_isin(self):
         """BF4Py must accept None as default_isin."""
-        bf = self._bf4py()
+        bf = _make_bf4py()
         self.assertIsNone(bf.default_isin)
+
+    def test_connector_shared_across_submodules(self):
+        """All sub-modules must share the same BF4PyConnector instance."""
+        bf = _make_bf4py(isin=BMW_ISIN)
+        connectors = [bf.equities.connector, bf.news.connector,
+                      bf.company.connector, bf.derivatives.connector,
+                      bf.general.connector, bf.live_data.connector]
+        self.assertTrue(all(c is bf.connector for c in connectors),
+                        "Not all submodules share the same connector instance")
 
 
 # ===========================================================================
@@ -806,59 +827,107 @@ class TestNews(unittest.TestCase):
 # ===========================================================================
 
 class TestBonds(unittest.TestCase):
+    """
+    Tests for the Bonds class.
+
+    NOTE ON USAGE: The library is designed to be used as
+        bf = BF4Py(default_isin='...', default_mic='...')
+        bf.bonds.bond_data()
+    However BF4Py currently does NOT wire up a bonds submodule (see
+    TestBF4Py.test_bonds_submodule_missing). The tests below therefore
+    use Bonds() directly – they document what SHOULD work once the
+    integration is complete, and explicitly document the existing bugs.
+    """
 
     def setUp(self):
         from bf4py.bonds import Bonds
         self.mock_connector = MagicMock()
         self.bonds = Bonds(connector=self.mock_connector)
 
+    # --- BF4Py integration gaps ----------------------------------------
+
+    def test_bf4py_has_no_bonds_attribute(self):
+        """
+        KNOWN BUG: BF4Py.__init__ never initialises self.bonds.
+        Accessing bf.bonds raises AttributeError, making the intended
+        usage pattern  bf.bonds.bond_data(...)  impossible.
+        """
+        bf = _make_bf4py(isin=BOND_ISIN, mic=XFRA_MIC)
+        with self.assertRaises(AttributeError):
+            _ = bf.bonds
+
+    def test_bonds_init_ignores_default_mic(self):
+        """
+        KNOWN BUG: Bonds.__init__ accepts no default_mic parameter.
+        Even if BF4Py passed default_mic through, Bonds would not store it,
+        so bond_data() with mic=None always raises AttributeError.
+        """
+        from bf4py.bonds import Bonds
+        import inspect
+        sig = inspect.signature(Bonds.__init__)
+        self.assertNotIn("default_mic", sig.parameters,
+                         "Bonds.__init__ now has default_mic – remove this bug test")
+
+    def test_bond_data_missing_default_mic_raises_attribute_error(self):
+        """
+        KNOWN BUG: Because Bonds.__init__ never sets self.default_mic,
+        calling bond_data() without an explicit mic raises AttributeError.
+        """
+        with self.assertRaises(AttributeError):
+            self.bonds.bond_data(isin=BOND_ISIN)
+
+    def test_search_criteria_uses_nonexistent_method(self):
+        """
+        KNOWN BUG: search_criteria() calls self.connector.search_get_request()
+        which does not exist on BF4PyConnector (the real method is
+        search_request). This raises AttributeError at runtime.
+        """
+        # MagicMock auto-creates attributes, so we explicitly check that
+        # the real connector does NOT have search_get_request.
+        from bf4py.connector import BF4PyConnector
+        self.assertFalse(hasattr(BF4PyConnector, "search_get_request"),
+                         "search_get_request now exists – remove this bug test")
+
     # --- search_parameter_template -------------------------------------
 
     def test_search_parameter_template_is_dict(self):
-        """search_parameter_template must return a dict."""
         from bf4py.bonds import Bonds
-        template = Bonds.search_parameter_template()
-        self.assertIsInstance(template, dict)
+        self.assertIsInstance(Bonds.search_parameter_template(), dict)
 
     def test_search_parameter_template_has_required_keys(self):
         from bf4py.bonds import Bonds
         template = Bonds.search_parameter_template()
-        required_keys = ["lang", "offset", "limit", "sorting", "sortOrder",
-                         "greenBond", "issuers", "currencies"]
-        for key in required_keys:
+        for key in ["lang", "offset", "limit", "sorting", "sortOrder",
+                    "greenBond", "issuers", "currencies"]:
             self.assertIn(key, template,
                           f"Key '{key}' missing from search_parameter_template()")
 
-    def test_search_parameter_template_is_static(self):
-        """search_parameter_template must be callable as a static method."""
+    def test_search_parameter_template_callable_without_instance(self):
         from bf4py.bonds import Bonds
-        # Should work without an instance
         result = Bonds.search_parameter_template()
         self.assertIsInstance(result, dict)
 
     # --- search --------------------------------------------------------
 
     def test_search_calls_bond_search(self):
-        """search must call search_request with 'bond_search'."""
+        """search() must call search_request with endpoint 'bond_search'."""
         self.mock_connector.search_request.return_value = {
             "recordsTotal": 0, "data": []
         }
         from bf4py.bonds import Bonds
-        params = Bonds.search_parameter_template()
-        self.bonds.search(params)
+        self.bonds.search(Bonds.search_parameter_template())
         self.assertEqual(self.mock_connector.search_request.call_args[0][0],
                          "bond_search")
 
     def test_search_paginates(self):
-        """search must issue multiple requests when recordsTotal > CHUNK_SIZE."""
+        """search() must page through results when recordsTotal > CHUNK_SIZE."""
         chunk = [{"isin": f"DE{i:012d}"} for i in range(1000)]
         self.mock_connector.search_request.side_effect = [
             {"recordsTotal": 1200, "data": chunk},
             {"recordsTotal": 1200, "data": [{"isin": "extra"} for _ in range(200)]},
         ]
         from bf4py.bonds import Bonds
-        params = Bonds.search_parameter_template()
-        result = self.bonds.search(params)
+        result = self.bonds.search(Bonds.search_parameter_template())
         self.assertEqual(len(result), 1200)
         self.assertEqual(self.mock_connector.search_request.call_count, 2)
 
@@ -867,27 +936,26 @@ class TestBonds(unittest.TestCase):
             "recordsTotal": 0, "data": []
         }
         from bf4py.bonds import Bonds
-        result = self.bonds.search(Bonds.search_parameter_template())
-        self.assertEqual(result, [])
+        self.assertEqual(self.bonds.search(Bonds.search_parameter_template()), [])
 
-    # --- bond_data (known bug: missing default_mic) --------------------
-
-    def test_bond_data_missing_default_mic_raises_attribute_error(self):
-        """
-        KNOWN BUG: Bonds.__init__ does not set self.default_mic,
-        so bond_data() raises AttributeError when mic=None is passed.
-        """
-        with self.assertRaises(AttributeError):
-            self.bonds.bond_data(isin=BOND_ISIN)
+    # --- bond_data (only works when both isin and mic are explicit) ----
 
     def test_bond_data_with_explicit_mic_calls_correct_endpoint(self):
-        """When both isin and mic are provided, bond_data calls 'master_data_bond'."""
+        """bond_data() works when isin and mic are both supplied explicitly."""
         self.mock_connector.data_request.return_value = {}
         self.bonds.bond_data(isin=BOND_ISIN, mic=XFRA_MIC)
         self.assertEqual(self.mock_connector.data_request.call_args[0][0],
                          "master_data_bond")
 
+    def test_bond_data_passes_isin_and_mic(self):
+        self.mock_connector.data_request.return_value = {}
+        self.bonds.bond_data(isin=BOND_ISIN, mic=XFRA_MIC)
+        params = self.mock_connector.data_request.call_args[0][1]
+        self.assertEqual(params["isin"], BOND_ISIN)
+        self.assertEqual(params["mic"],  XFRA_MIC)
+
     def test_bond_data_no_isin_raises(self):
+        """bond_data() must raise AssertionError when no ISIN is available."""
         with self.assertRaises(AssertionError):
             self.bonds.bond_data(isin=None, mic=XFRA_MIC)
 
