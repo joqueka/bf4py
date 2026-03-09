@@ -7,9 +7,9 @@ class BF4PyConnector():
         
         self.session = requests.Session()
         
-        self.session.headers.update({'authority': 'api.boerse-frankfurt.de', 
-                                     'origin': 'https://www.boerse-frankfurt.de',
-                                     'referer': 'https://www.boerse-frankfurt.de/',})
+        self.session.headers.update({'authority': 'api.live.deutsche-boerse.com', 
+							         'origin': 'https://live.deutsche-boerse.com',
+							         'referer': 'https://live.deutsche-boerse.com/',})
         
         if salt is None:
             # Step 1: Get Homepage and extract main-es2015 Javascript file
@@ -92,7 +92,12 @@ class BF4PyConnector():
         header['accept'] = 'application/json, text/plain, */*'
         header['content-type'] = 'application/json; charset=UTF-8'
         req = self.session.post(url, headers=header, timeout=(3.5, 15), json=params)
-        data = json.loads(req.text)
+
+        try:
+            data = json.loads(req.text)
+        except:
+            print(req.text)
+            raise Exception('Boerse Frankfurt returned no data, check parameters!')
         
         return data
 
